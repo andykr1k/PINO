@@ -1,8 +1,12 @@
+from typing import Optional, Dict
 from pydantic import BaseModel, Field
 
+class DatasetConfig(BaseModel):
+    InteriorGS: str = Field(..., description="Path to the InteriorGS dataset")
+
 class PathsConfig(BaseModel):
-    data_dir: str = Field(..., description="Path to the data directory")
-    output_dir: str = Field(..., description="Path to the output directory")
+    dataset: DatasetConfig = Field(..., description="Dataset paths configurations")
+    output_dir: Optional[str] = Field(None, description="Path to the output directory")
 
 class HParamsConfig(BaseModel):
     learning_rate: float = Field(..., description="Learning rate for the optimizer")

@@ -12,6 +12,3 @@ hydra:
   sweep:
     dir: ${paths.output_dir}/multirun/${now:%Y-%m-%d}/${now:%H-%M-%S}
     subdir: ${hydra.job.num}
-
-dataset:
-  InteriorGS: "/z/dat/InteriorGS/0001_839920/3dgs_uncompressed.ply"
