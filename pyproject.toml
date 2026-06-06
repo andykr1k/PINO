@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "aidan-lib[compiled_dino]",
+    "dotenv>=0.9.9",
     "hydra-core>=1.3.2",
     "numpy>=2.4.6",
     "plyfile>=1.1.4",
