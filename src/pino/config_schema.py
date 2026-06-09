@@ -13,7 +13,11 @@ class HParamsConfig(BaseModel):
     batch_size: int = Field(..., description="Batch size for training")
     epochs: int = Field(..., description="Number of epochs to train")
 
+class PreprocessConfig(BaseModel):
+    voxel_size: float = Field(0.05, description="Size of the voxel in real units")
+
 class AppConfig(BaseModel):
     project_name: str = Field(..., description="Name of the project")
     paths: PathsConfig
     hparams: HParamsConfig
+    preprocess: PreprocessConfig = Field(default_factory=PreprocessConfig)
