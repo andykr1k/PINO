@@ -20,7 +20,6 @@ def main(cfg: DictConfig) -> None:
     
     print(f"Project Name: {app_config.project_name}")
     print(f"InteriorGS Dataset Path: {app_config.paths.dataset.InteriorGS}")
-    print(f"Output Directory: {app_config.paths.output_dir}")
     print(f"Learning Rate: {app_config.hparams.learning_rate}")
     print(f"Batch Size: {app_config.hparams.batch_size}")
     print(f"Epochs: {app_config.hparams.epochs}")
