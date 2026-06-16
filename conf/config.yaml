@@ -6,4 +6,5 @@ defaults:
 project_name: pino_research
 
 preprocess:
-  voxel_size: 1.0
+  num_patches: 1024
+  k_neighbors: 32

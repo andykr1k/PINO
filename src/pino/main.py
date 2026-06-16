@@ -52,7 +52,10 @@ def main(cfg: DictConfig) -> None:
     
     # Time the preprocessing step
     start_time = time.time()
-    splat.preprocess_to_voxels(voxel_size=app_config.preprocess.voxel_size)
+    features = splat.preprocess_to_patches(
+        num_patches=app_config.preprocess.num_patches,
+        k_neighbors=app_config.preprocess.k_neighbors
+    )
     end_time = time.time()
     print(f"Preprocessing took {end_time - start_time:.4f} seconds.")
     

@@ -14,7 +14,8 @@ class HParamsConfig(BaseModel):
     epochs: int = Field(..., description="Number of epochs to train")
 
 class PreprocessConfig(BaseModel):
-    voxel_size: float = Field(0.05, description="Size of the voxel in real units")
+    num_patches: int = Field(1024, description="Number of patches (FPS centers) to sample")
+    k_neighbors: int = Field(32, description="Number of neighbors per patch (KNN)")
 
 class AppConfig(BaseModel):
     project_name: str = Field(..., description="Name of the project")
