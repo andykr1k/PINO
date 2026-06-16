@@ -1,3 +1,4 @@
 # Path configurations
 dataset:
-  InteriorGS: "/z/dat/InteriorGS"
+  InteriorGS: ${oc.env:INTERIOR_GS_PATH, /z/dat/InteriorGS}
+  ProcessedGS: ${oc.env:PROCESSED_GS_PATH, /z/dat/ProcessedGS}

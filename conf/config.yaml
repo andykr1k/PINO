@@ -8,3 +8,22 @@ project_name: pino_research
 preprocess:
   num_patches: 1024
   k_neighbors: 32
+  on_the_fly: False
+  num_workers: 8
+
+model:
+  embed_dim: 384
+  depth: 12
+  num_heads: 6
+
+dino:
+  out_dim: 256
+  momentum_teacher: 0.996
+  teacher_temp: 0.04
+  student_temp: 0.1
+  mask_ratio: 0.6
+
+wandb:
+  enabled: True
+  entity: null
+  project: null

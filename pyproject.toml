@@ -13,7 +13,9 @@ dependencies = [
     "pydantic>=2.13.4",
     "pyrefly>=1.0.0",
     "pyyaml>=6.0.3",
+    "tqdm>=4.68.1",
     "viser>=1.0.30",
+    "wandb>=0.27.2",
 ]
 
 [build-system]
