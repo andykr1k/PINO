@@ -5,10 +5,6 @@ defaults:
 
 project_name: pino_research
 
-# hydra output directory configuration
-hydra:
-  run:
-    dir: ${paths.output_dir}/${now:%Y-%m-%d}/${now:%H-%M-%S}
-  sweep:
-    dir: ${paths.output_dir}/multirun/${now:%Y-%m-%d}/${now:%H-%M-%S}
-    subdir: ${hydra.job.num}
+preprocess:
+  num_patches: 1024
+  k_neighbors: 32
