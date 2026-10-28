@@ -8,8 +8,10 @@
 
 ## Question
 E006 showed small tabletop objects (spoon, bottle, jar, bowl) are not identifiable from the embeddings; they span
-well under one 16-px DINO patch in 448² renders. With 896² renders (56×56 DINO patches, each covering a quarter of
-the solid angle), do the distilled embeddings identify objects better, especially small ones?
+well under one 16-px DINO patch in 448² renders. DINO's patch is fixed at 16×16 px, so the patch grid scales with
+image side length: 28×28 at 448² vs 56×56 at 896². The field of view is unchanged, so each patch covers a quarter of
+the scene area it did before, and an object spans ~4× as many patches (views are rendered natively at 896², not
+upscaled). Do the distilled embeddings then identify objects better, especially small ones?
 
 ## Setup
 - Single change from E004: `data.image_size=[896,896]` (plus `data.max_splats_per_view=200000` as in E004). Same
