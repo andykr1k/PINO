@@ -1,0 +1,20 @@
+55 classes (present in >= 300 train scenes): ['Basin cabinet', 'Ceiling lamp', 'Clothes hanger', 'Gas stoves', 'Multi person sofa', 'Side table', 'Smoke lampblack machine', 'Spoon', 'Storage rack', 'Wall design', 'armchair', 'bath heater', 'bed', 'bedside table', 'blanket', 'body pillow', 'book', 'bottle', 'bowl', 'box', 'cabinet', 'carpet', 'chair', 'chandelier', 'cup', 'curtain', 'decorative painting', 'dining table', 'dish', 'door', 'downlights', 'faucet', 'flowerpot', 'flowers', 'jar', 'mattress', 'mirror', 'ornament', 'pillow', 'plant', 'quilt', 'refrigerator', 'shower head', 'stool', 'table lamp', 'teatable', 'toilet', 'towel', 'tray', 'tuyere', 'tv', 'vase', 'wardrobe', 'washing_machine', 'window']
+Lifting DINO features from 24 views/scene at 448x448
+  train: 25/150 scenes (513s)
+  train: 50/150 scenes (736s)
+  train: 75/150 scenes (981s)
+  train: 100/150 scenes (1209s)
+  train: 125/150 scenes (1456s)
+  train: 150/150 scenes (1697s)
+ splat      model: acc 0.494  balanced acc 0.502  (train 636263, val 80015)
+ splat     random: acc 0.136  balanced acc 0.161  (train 636263, val 80015)
+ splat attributes: acc 0.168  balanced acc 0.203  (train 636263, val 80015)
+ splat dino_lifted: acc 0.558  balanced acc 0.505  (train 636263, val 80015)
+ splat model_views: acc 0.504  balanced acc 0.532  (train 636263, val 80015)
+  inst      model: acc 0.553  balanced acc 0.573  (train 20700, val 2595)
+  inst     random: acc 0.215  balanced acc 0.244  (train 20700, val 2595)
+  inst attributes: acc 0.402  balanced acc 0.437  (train 20700, val 2595)
+  inst dino_lifted: acc 0.656  balanced acc 0.600  (train 20700, val 2595)
+  inst model_views: acc 0.562  balanced acc 0.596  (train 20700, val 2595)
+majority-class accuracy: splat 0.146, instance 0.154; chance balanced accuracy 0.018
+wrote /scratch4/home/adempst/projects/PINO/.claude/worktrees/dino-alignment/lab_notebook/experiments/E009_dino_lifted_upper_bound/logs/e004_448/results.json

@@ -1,0 +1,15 @@
+55 classes (present in >= 300 train scenes): ['Basin cabinet', 'Ceiling lamp', 'Clothes hanger', 'Gas stoves', 'Multi person sofa', 'Side table', 'Smoke lampblack machine', 'Spoon', 'Storage rack', 'Wall design', 'armchair', 'bath heater', 'bed', 'bedside table', 'blanket', 'body pillow', 'book', 'bottle', 'bowl', 'box', 'cabinet', 'carpet', 'chair', 'chandelier', 'cup', 'curtain', 'decorative painting', 'dining table', 'dish', 'door', 'downlights', 'faucet', 'flowerpot', 'flowers', 'jar', 'mattress', 'mirror', 'ornament', 'pillow', 'plant', 'quilt', 'refrigerator', 'shower head', 'stool', 'table lamp', 'teatable', 'toilet', 'towel', 'tray', 'tuyere', 'tv', 'vase', 'wardrobe', 'washing_machine', 'window']
+  train: 25/150 scenes (44s)
+  train: 50/150 scenes (70s)
+  train: 75/150 scenes (98s)
+  train: 100/150 scenes (124s)
+  train: 125/150 scenes (150s)
+  train: 150/150 scenes (175s)
+ splat      model: acc 0.511  balanced acc 0.513  (train 795041, val 104106)
+ splat     random: acc 0.130  balanced acc 0.158  (train 795041, val 104106)
+ splat attributes: acc 0.159  balanced acc 0.214  (train 795041, val 104106)
+  inst      model: acc 0.586  balanced acc 0.604  (train 25814, val 3353)
+  inst     random: acc 0.200  balanced acc 0.254  (train 25814, val 3353)
+  inst attributes: acc 0.403  balanced acc 0.499  (train 25814, val 3353)
+majority-class accuracy: splat 0.193, instance 0.197; chance balanced accuracy 0.018
+wrote /scratch4/home/adempst/projects/PINO/.claude/worktrees/dino-alignment/lab_notebook/experiments/E007_high_res_views/logs/probe_step30000/results.json

@@ -1,0 +1,79 @@
+{
+  "project_name": "pino_research",
+  "paths": {
+    "dataset": {
+      "InteriorGS": "/z/dat/InteriorGS"
+    },
+    "output_dir": "/scratch4/home/adempst/projects/PINO/outputs/e007_high_res_views"
+  },
+  "hparams": {
+    "learning_rate": 0.0003,
+    "weight_decay": 0.05,
+    "max_steps": 30000,
+    "warmup_steps": 1000,
+    "min_lr_ratio": 0.01,
+    "grad_clip": 1.0
+  },
+  "preprocess": {
+    "num_patches": 1024,
+    "k_neighbors": 32
+  },
+  "data": {
+    "val_every": 50,
+    "image_size": [
+      896,
+      896
+    ],
+    "num_candidates": 24,
+    "views_per_scene": 4,
+    "scenes_per_batch": 3,
+    "hfov_range_deg": [
+      70.0,
+      100.0
+    ],
+    "height_range": [
+      1.2,
+      1.8
+    ],
+    "pitch_range_deg": [
+      -25.0,
+      10.0
+    ],
+    "max_splats_per_view": 200000,
+    "max_depth": 12.0,
+    "min_opacity": 0.005,
+    "num_workers": 24
+  },
+  "teacher": {
+    "checkpoint": "facebook/dinov3-vitl16-pretrain-lvd1689m",
+    "cache_dir": null,
+    "local_files_only": true
+  },
+  "model": {
+    "num_groups": 1024,
+    "fps_subset": 16384,
+    "splat_dim": 128,
+    "token_dim": 384,
+    "depth": 8,
+    "num_heads": 6,
+    "out_dim": 128,
+    "k_interp": 3
+  },
+  "loss": {
+    "render_weight": 1.0,
+    "point_weight": 0.25,
+    "render_downsample": 4,
+    "min_alpha": 0.5,
+    "point_max_splats": 65536,
+    "rotate_inputs": true
+  },
+  "train": {
+    "device": "cuda",
+    "seed": 0,
+    "log_every": 25,
+    "val_every": 1000,
+    "val_scenes": 20,
+    "ckpt_every": 2000,
+    "resume": "/scratch4/home/adempst/projects/PINO/outputs/e007_high_res_views/ckpt_014000.pt"
+  }
+}
