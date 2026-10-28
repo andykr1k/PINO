@@ -20,13 +20,17 @@ This project discards legacy assumptions (like voxels) and treats Gaussian Splat
 
 - [x] **Project Initialization**: Basic boilerplate setup (Hydra, Pydantic, uv).
 - [x] **Architecture Design**: Defined the Native 3D DINO pipeline (FPS + KNN, Localized Features).
-- [ ] **Data Preprocessing**:
-  - [ ] Implement FPS and KNN for splats.
-  - [ ] Extract raw scales and quaternions from PLY.
-  - [ ] Generate localized 14D feature tensors.
-- [ ] **Transformer Architecture**:
-  - [ ] Implement Point-MAE style patch embedding (MLP + Pool).
-  - [ ] Implement standard Transformer Encoder.
+- [x] **Data Preprocessing**:
+  - [x] Implement FPS and KNN for splats.
+  - [x] Extract raw scales and quaternions from PLY.
+  - [x] Generate localized 14D feature tensors.
+- [x] **Transformer Architecture**:
+  - [x] Implement Point-MAE style patch embedding (MLP + Pool).
+  - [x] Implement standard Transformer Encoder.
+- [x] **2D DINO Distillation** (first training objective):
+  - [x] Rendered-view data pipeline (image + DINOv3 tokens + visible splats + splat->patch correspondence).
+  - [x] Rendered-embedding alignment loss and per-splat point loss.
+  - [x] Single-GPU training loop with validation and visualisations.
 - [ ] **DINO Framework**:
   - [ ] Implement Teacher/Student paradigm.
   - [ ] Implement 3D augmentations (Geometric transforms).
@@ -34,6 +38,37 @@ This project discards legacy assumptions (like voxels) and treats Gaussian Splat
 - [ ] **Training Loop**:
   - [ ] Setup DINO loss.
   - [ ] Multi-GPU / scaling support.
+
+## 2D → 3D DINO Distillation
+
+The first objective aligns per-splat embeddings with frozen DINOv3 (ViT-L/16) features of rendered views.
+
+1. **Scenes** (`pino.data.scene`, `pino.data.dataset`): DataLoader workers read the uncompressed PLY of an
+   InteriorGS scene directly into tensors and propose candidate cameras at eye height inside the room
+   polygons of `structure.json`.
+2. **Views** (`pino.data.views.ViewGenerator`, GPU): candidates are rendered with gsplat; views inside
+   furniture, facing a wall or looking out of the scene are rejected. DINOv3 embeds the kept renders and the
+   splats in each view frustum are cropped out. Each visible splat (depth tested against the render) gets the
+   index of the DINO patch it lands in. The result is a `ViewBatch`: image, DINO tokens, splats, correspondence.
+3. **Model** (`pino.model.SplatTransformer`): FPS centres with Voronoi grouping, a mini-PointNet on the
+   localised 14D features, a transformer over the group tokens, and per-splat decoding from the point feature
+   plus the interpolated nearby tokens.
+4. **Loss** (`pino.losses`): per-splat embeddings are alpha-blended into the view with gsplat
+   (differentiable), pooled onto the DINO patch grid, normalised by coverage, linearly projected and compared
+   with the standardised DINO tokens by cosine distance. A second, optional term matches each visible splat
+   directly to its patch token. The projection is linear, so it commutes with blending:
+   `model.to_teacher_space(model.project(features))` gives each splat's embedding in DINO space without rendering.
+
+```bash
+uv run python -m pino.train                                # defaults in conf/config.yaml
+uv run python -m pino.train hparams.max_steps=1000 data.scenes_per_batch=2
+```
+
+Requirements: the DINOv3 checkpoint in the local HF cache (`HF_HOME`), and nvcc + `CUDA_HOME` so gsplat can
+JIT-compile its CUDA kernels on first use (cached afterwards). Outputs (metrics.jsonl, checkpoints,
+`vis/val_*.jpg` showing render | DINO PCA | predicted PCA) go to the Hydra run dir.
+
+`val/baseline/cos` is the score of predicting the mean DINO token; `val/render/cos_raw` must beat it.
 
 ## Tech Stack
 
@@ -53,14 +88,14 @@ uv sync
 
 ## Running the Code
 
-The main entry point is `src/main.py`.
+The splat viewer entry point is `src/pino/main.py`.
 
 ```bash
-uv run python src/main.py
+uv run python src/pino/main.py
 ```
 
 You can override Hydra configurations from the command line:
 
 ```bash
-uv run python src/main.py hparams.learning_rate=0.005
+uv run python src/pino/main.py hparams.learning_rate=0.005
 ```

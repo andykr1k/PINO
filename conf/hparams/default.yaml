@@ -1,4 +1,7 @@
 # Hyperparameter configurations
-learning_rate: 0.001
-batch_size: 32
-epochs: 100
+learning_rate: 0.0003
+weight_decay: 0.05
+max_steps: 30000
+warmup_steps: 1000
+min_lr_ratio: 0.01
+grad_clip: 1.0
