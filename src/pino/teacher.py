@@ -35,14 +35,19 @@ class DINOv3Teacher(nn.Module):
         self.register_buffer("std", torch.tensor(IMAGENET_STD).view(1, 3, 1, 1), persistent=False)
 
     @torch.no_grad()
-    def forward(self, images: torch.Tensor) -> TeacherOutput:
-        """images: (B, 3, H, W) in [0, 1] with H and W multiples of the patch size."""
+    def forward(self, images: torch.Tensor, max_batch: int = 4) -> TeacherOutput:
+        """images: (B, 3, H, W) in [0, 1] with H and W multiples of the patch size.
+
+        Runs at most `max_batch` images at a time to bound peak memory at high resolutions.
+        """
         b, _, height, width = images.shape
         h, w = height // self.patch_size, width // self.patch_size
         assert h * self.patch_size == height and w * self.patch_size == width
         x = (images - self.mean) / self.std
-        with torch.autocast(device_type=images.device.type, dtype=self.dtype):
-            tokens = self.model(pixel_values=x).last_hidden_state
-        tokens = tokens.float()
+        chunks = []
+        for start in range(0, b, max_batch):
+            with torch.autocast(device_type=images.device.type, dtype=self.dtype):
+                chunks.append(self.model(pixel_values=x[start : start + max_batch]).last_hidden_state.float())
+        tokens = torch.cat(chunks)
         patch_tokens = tokens[:, 1 + self.num_register_tokens :].reshape(b, h, w, self.embed_dim)
         return TeacherOutput(patch_tokens=patch_tokens, cls_token=tokens[:, 0])
