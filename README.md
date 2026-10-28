@@ -77,6 +77,13 @@ To inspect a checkpoint, colour every splat of a scene by the top-3 PCA componen
 uv run python -m pino.pca_render --ckpt outputs/<run>/latest.pt --scene 0101_839973 --out pca_out
 ```
 
+To measure how well the embeddings identify objects (linear probe over `labels.json` object classes on held-out
+scenes, against raw-attribute and random-init baselines):
+
+```bash
+uv run python -m pino.object_probe --ckpt outputs/<run>/ckpt_030000.pt --out probe_out
+```
+
 Experiments, hypotheses and run summaries are tracked in [`lab_notebook/`](lab_notebook/README.md).
 
 ## Tech Stack

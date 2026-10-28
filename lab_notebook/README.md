@@ -20,7 +20,7 @@ everything specific to one experiment (launch scripts, probes, logs, visualisati
 | H1 | A feed-forward native-3D splat transformer can distill 2D DINOv3 patch features into per-splat embeddings that generalise to unseen scenes (beat the constant mean-token baseline on held-out scenes). | **Supported** | E004-r1 (fixed data, 30k steps): held-out raw cosine 0.809 (norm-corrected) vs 0.463 predict-the-mean baseline; standardised cosine 0.723. Curves plateau by ~24k steps. |
 | H2 | Cosine loss against *raw* DINO tokens collapses towards predicting the mean token, because tokens share a large common component; standardising targets (running per-channel mean/std) forces content learning. | **Weakly supported** | E000-r1 (raw targets) predicted near-constant maps; E000-r2 (standardised) beat the baseline within 200 steps. Confounded by run length (60 vs 200 steps). Needs a matched ablation. |
 | H3 | DINOv3 patch tokens contain a view-dependent image-position component (left-right gradient in PCA) that a view-independent per-splat embedding cannot reproduce, capping achievable alignment. | Untested (observation) | Visible in E000 view grid and E001 vis. Test: measure cosine ceiling of the best view-independent fit, or regress out patch position from targets. |
-| H4 | The distilled per-splat embeddings linearly decode object semantics (InteriorGS `labels.json` boxes). | Untested quantitatively; qualitative support | E005 (fixed data, 6 scenes): whole-scene PCA groups splats by category across room types (yellow armchair = white sofa; chairs vs tables separate by 30k). Linear probe planned. |
+| H4 | The distilled per-splat embeddings linearly decode object semantics (InteriorGS `labels.json` boxes). | **Supported** | E006: linear probe over 55 object classes on 20 held-out scenes: splat balanced accuracy 0.499 (raw attributes 0.214, random-init model 0.159, chance 0.018); object level 0.573 (attributes 0.499). Small tabletop items (spoon, bottle, bowl) fail. E005 PCA renders agree qualitatively. |
 | H6 | Per-splat embeddings live in DINO's feature geometry but at splat (not 16-px patch) resolution. | **Supported (qualitative)** | E005: one PCA basis fit on splat embeddings colours both the splat render and the DINO tokens consistently in 6 held-out scenes; thin structures (chair legs, chandelier arms) stay sharp. |
 | H7 | With a cosine loss in standardised space, prediction norms drift, so any metric/consumer that de-standardises (`pred·std + mean`) must first fix the norm. | **Supported** | E004: |pred| shrank 12.0 → 5.4 (target 33.7); logged raw cosine fell 0.704 → 0.623 while norm-corrected raw cosine rose to 0.809. Fixed in `to_teacher_space`. |
 | H5 | The differentiable rendered-feature loss is what drives learning; the per-splat point loss is a cheap, sufficient substitute (or vice versa). | Untested | Planned ablation: `loss.point_weight=0` vs `loss.render_weight=0`. |
@@ -40,6 +40,9 @@ everything specific to one experiment (launch scripts, probes, logs, visualisati
 - **Distillation on fixed data (E004).** 30k steps: held-out raw cosine 0.809 (baseline 0.463), standardised 0.723,
   plateauing. ⚠️ Raw cosine as logged during training (E000–E004 logs) is distorted by prediction-norm drift (H7);
   use `metrics_revalidated.jsonl` / the corrected `to_teacher_space`.
+- **Object identification (E006).** `python -m pino.object_probe` labels splats by `labels.json` boxes and fits a
+  linear probe (55 classes, 150 train / 20 held-out scenes). Distilled embeddings: 0.499 splat / 0.573 object
+  balanced accuracy vs 0.214 / 0.499 for Fourier-expanded raw attributes.
 - **Embedding PCA renders (E002).** `python -m pino.pca_render` embeds a whole scene (tiled like training crops),
   colours splats by the top-3 PCA components and renders them next to RGB and the DINO tokens in the same basis.
 
@@ -57,6 +60,8 @@ everything specific to one experiment (launch scripts, probes, logs, visualisati
 | E004-r1 | 2026-10-27 | `fc57aaf` | `data.max_splats_per_view=200000` | 30k | raw cos 0.809 (norm-corrected) vs baseline 0.463; std cos 0.723; val loss 0.359 | Done |
 | E005-r1 | 2026-10-27 | `760a296` | E004-r1 step-2k and 4k ckpts; 6 val scenes | — | PCA renders separate ceiling/wall/floor/furniture consistently with DINO across room types | Done |
 | E005-r2 | 2026-10-28 | `3fdd2ce` | E004-r1 final (30k) ckpt; 6 val scenes; L2-normalised PCA | — | finer categories (chairs vs tables, curtains vs walls); DINO agrees | Done |
+| E006-r1 | 2026-10-28 | `object_probe` commit | E004 step-30k ckpt; 150 train / 20 val scenes; 55 classes | — | splat bal. acc 0.499 (attr 0.214, random 0.159); object 0.573 (attr 0.499) | Done |
+| E006-r2/r3 | 2026-10-28 | `object_probe` commit | E004 step-2k / 10k ckpts | — | splat bal. acc 0.360 / 0.488; object 0.507 / 0.607 | Done |
 
 Metric glossary: *raw cos* = `val/render/cos_raw`, cosine between rendered predicted features (mapped back to
 DINO space) and DINO patch tokens; *std cos* = `val/render/cos`, same in standardised target space (constant

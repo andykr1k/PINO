@@ -1,0 +1,65 @@
+1000 scenes, 446813 boxed instances, 714 distinct labels
+labels without boxes: {'wall': 31861, 'floor': 13374, 'ceiling': 13013, 'room': 1000}
+corner layout c2=c0+e1+e2 and c6=c0+e1+e2+e3 holds for 446813/446813
+first edge axis-aligned for 405437/446813
+top labels (instances, scenes):
+  book                          80096   827
+  Boxed food                    20519    32
+  downlights                    17982   719
+  Bagged food                   13562    35
+  Medicine box                  12605     9
+  ornament                      11105   849
+  vegetable                     10598   106
+  fruit                          9322   218
+  chair                          7771   878
+  drinks                         7495    68
+  canned food                    6279   116
+  cup                            6206   675
+  window                         6101   909
+  wardrobe                       5934   922
+  decorative painting            5681   844
+  body pillow                    5681   709
+  curtain                        5612   764
+  cigar                          5525     5
+  plant                          5008   851
+  pillow                         4912   586
+  wine                           4805   204
+  other                          4654   577
+  box                            4144   379
+  Toiletries                     3863   127
+  bread                          3523    44
+  chandelier                     3510   797
+  door                           3412   684
+  Spotlight                      3361   169
+  towel                          3323   480
+  chocolate                      3308    23
+  Wall design                    3116   380
+  Cosmetic bottles               3050    22
+  Ice Cubes                      2958    71
+  medicine bottle                2664    11
+  Ceiling lamp                   2648   567
+  vase                           2622   690
+  cabinet                        2535   752
+  Dining plate                   2532   251
+  pen                            2461   199
+  cigarette                      2450     8
+  trappings                      2316   256
+  Storage rack                   2175   563
+  Dairy                          2026     9
+  lipstick                       2002    21
+  Fresh Food                     1995    39
+  carpet                         1985   733
+  dish                           1826   498
+  tray                           1820   490
+  couple                         1762   242
+  stone                          1762    21
+  bowl                           1760   316
+  flowers                        1739   624
+  Spoon                          1646   373
+  bed                            1606   712
+  glasses                        1596    45
+  tuyere                         1588   314
+  chopsticks                     1544    86
+  stool                          1476   558
+  knife                          1467   273
+  paper                          1448   149
