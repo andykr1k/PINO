@@ -23,7 +23,7 @@ everything specific to one experiment (launch scripts, probes, logs, visualisati
 | H4 | The distilled per-splat embeddings linearly decode object semantics (InteriorGS `labels.json` boxes). | **Supported** | E006: linear probe over 55 object classes on 20 held-out scenes: splat balanced accuracy 0.499 (raw attributes 0.214, random-init model 0.159, chance 0.018); object level 0.573 (attributes 0.499). Small tabletop items (spoon, bottle, bowl) fail. E005 PCA renders agree qualitatively. |
 | H6 | Per-splat embeddings live in DINO's feature geometry but at splat (not 16-px patch) resolution. | **Supported (qualitative)** | E005: one PCA basis fit on splat embeddings colours both the splat render and the DINO tokens consistently in 6 held-out scenes; thin structures (chair legs, chandelier arms) stay sharp. |
 | H7 | With a cosine loss in standardised space, prediction norms drift, so any metric/consumer that de-standardises (`pred·std + mean`) must first fix the norm. | **Supported** | E004: |pred| shrank 12.0 → 5.4 (target 33.7); logged raw cosine fell 0.704 → 0.623 while norm-corrected raw cosine rose to 0.809. Fixed in `to_teacher_space`. |
-| H8 | Training on higher-resolution renders (more, smaller DINO patches) improves object identification, especially for small objects. | Testing (E007) | E006: small tabletop classes ≈ 0 recall at 448². |
+| H8 | Training on higher-resolution renders (more, smaller DINO patches) improves object identification, especially for small objects. | Testing (E007); not supported at 10k | E007 @10k: probe balanced acc 0.475 (splat) / 0.603 (object) vs 0.488 / 0.607 at 448²; small objects still ≈ 0. Final 30k pending. |
 | H5 | The differentiable rendered-feature loss is what drives learning; the per-splat point loss is a cheap, sufficient substitute (or vice versa). | Untested | Planned ablation: `loss.point_weight=0` vs `loss.render_weight=0`. |
 
 ## What has been tested
@@ -62,7 +62,7 @@ everything specific to one experiment (launch scripts, probes, logs, visualisati
 | E005-r1 | 2026-10-27 | `760a296` | E004-r1 step-2k and 4k ckpts; 6 val scenes | — | PCA renders separate ceiling/wall/floor/furniture consistently with DINO across room types | Done |
 | E005-r2 | 2026-10-28 | `3fdd2ce` | E004-r1 final (30k) ckpt; 6 val scenes; L2-normalised PCA | — | finer categories (chairs vs tables, curtains vs walls); DINO agrees | Done |
 | E006-r1 | 2026-10-28 | `6001868` | E004 step-30k ckpt; 150 train / 20 val scenes; 55 classes | — | splat bal. acc 0.499 (attr 0.214, random 0.159); object 0.573 (attr 0.499) | Done |
-| E007-r1 | 2026-10-28 | `ed4d30e` | `data.image_size=[896,896]`, `data.max_splats_per_view=200000` | 30k | pending (primary metric: E006 probe) | **Running** |
+| E007-r1 | 2026-10-28 | `ed4d30e` | `data.image_size=[896,896]`, `data.max_splats_per_view=200000` | 30k | @10k probe: splat bal. acc 0.475 vs E004 0.488; object 0.603 vs 0.607 (no gain yet) | **Running** |
 | E006-r2/r3 | 2026-10-28 | `6001868` | E004 step-2k / 10k ckpts | — | splat bal. acc 0.360 / 0.488; object 0.507 / 0.607 | Done |
 
 Metric glossary: *raw cos* = `val/render/cos_raw`, cosine between rendered predicted features (mapped back to

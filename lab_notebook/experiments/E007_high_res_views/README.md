@@ -36,7 +36,23 @@ upscaled). Do the distilled embeddings then identify objects better, especially 
 | E007-r1 | `data.image_size=[896,896]`, `data.max_splats_per_view=200000` | 30k | `/scratch4/home/adempst/projects/PINO/outputs/e007_high_res_views` | |
 
 ## Results
-Pending.
+Interim, step 10000 (`logs/probe_step10000/`), E006 probe, balanced accuracy, held-out scenes:
+
+| Level | E004 (448²) @10k | E007 (896²) @10k | attributes | random |
+|-------|------------------|------------------|------------|--------|
+| splat | 0.488 | 0.475 | 0.214 | 0.158 |
+| instance | 0.607 | 0.603 | 0.499 | 0.254 |
+
+Small-object splat recall E004 → E007 @10k: spoon 0.11 → 0.08, bottle 0.00 → 0.05, jar 0.00 → 0.02, bowl 0.03 →
+0.03, tray 0.02 → 0.04, cup 0.16 → 0.23. Per-class differences of up to ±0.2 in both directions are within the
+noise of a few dozen test objects per class.
+
+Validation std cosine @12k: 0.684 (E004 @12k: 0.681; not strictly comparable, finer targets).
 
 ## Interpretation
-Pending.
+- Interim: **no evidence for H8 at 10k.** 4× more DINO patches per object in the supervision did not improve object
+  identification, including for small objects. Final (30k) probe pending.
+- Leading hypothesis: the bottleneck is the student's spatial resolution, not the targets. With 1024 FPS groups for
+  ≤200k splats per view (~200 splats per group), a small object's few dozen splats share a group (token) with the
+  surface below. Test: `model.num_groups` 2048/4096. A DINO upper bound (teacher tokens lifted onto splats) would
+  separately show whether the teacher distinguishes these objects at all.
