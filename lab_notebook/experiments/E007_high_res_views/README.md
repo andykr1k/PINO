@@ -35,6 +35,17 @@ upscaled). Do the distilled embeddings then identify objects better, especially 
 |-----|---------------|-------|------------|-------|
 | E007-r1 | `data.image_size=[896,896]`, `data.max_splats_per_view=200000` | 30k | `/scratch4/home/adempst/projects/PINO/outputs/e007_high_res_views` | |
 
+## Incident: crash at step ~14,950 and resume
+- The run died with a CUDA `index out of bounds` assert in an ATen index kernel (the original log is in the run dir
+  as `train_part1_crashed.log`), and the first resume hung with the GPU at 100%. Cause (most likely): gsplat counts
+  tile intersections in 32 bits (`uint32_t n_isects`, int32 offsets). Each step renders 24 whole-scene candidate
+  cameras in one call; at 896² (4× the tiles of 448²) a batch with several cameras inside geometry, where near
+  splats cover every tile, can overflow it. E004 at 448² never hit this in 30k steps. A concurrent lifting job on
+  the same GPU also slowed the step just before the crash; memory pressure can't be fully ruled out.
+- Fix (`99b07db`): `ViewGenerator._render` renders 4 cameras per gsplat call. Outputs are identical.
+- Resumed from `ckpt_014000.pt` with `train.resume=…` (model, optimizer, step and target statistics restored; ~950
+  steps redone with different random batches). Nothing else runs on GPU 7 until the run finishes.
+
 ## Results
 Interim, step 10000 (`logs/probe_step10000/`), E006 probe, balanced accuracy, held-out scenes:
 
