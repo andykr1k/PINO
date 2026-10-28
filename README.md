@@ -70,6 +70,15 @@ JIT-compile its CUDA kernels on first use (cached afterwards). Outputs (metrics.
 
 `val/baseline/cos` is the score of predicting the mean DINO token; `val/render/cos_raw` must beat it.
 
+To inspect a checkpoint, colour every splat of a scene by the top-3 PCA components of its embedding and render it
+(also writes a PCA-coloured `.ply`; `--viser` serves it interactively):
+
+```bash
+uv run python -m pino.pca_render --ckpt outputs/<run>/latest.pt --scene 0101_839973 --out pca_out
+```
+
+Experiments, hypotheses and run summaries are tracked in [`lab_notebook/`](lab_notebook/README.md).
+
 ## Tech Stack
 
 - **[uv](https://github.com/astral-sh/uv)** for fast, reliable package management.

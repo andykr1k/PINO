@@ -1,0 +1,4 @@
+# Large regenerable artifacts stay out of git (logs, configs, images and PCA bases are committed)
+*.ply
+latest.pt
+ckpt_*.pt
