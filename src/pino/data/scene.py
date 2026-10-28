@@ -8,6 +8,7 @@ import torch
 
 SH_C0 = 0.28209479177387814
 PLY_NAME = "3dgs_uncompressed.ply"
+OPAQUE_LOGIT = 10.0  # sigmoid(10) ~= 0.99995; stands in for +inf opacity logits
 
 
 @dataclass
@@ -81,6 +82,10 @@ def load_ply_gaussians(ply_path: Path, min_opacity: float = 0.0) -> dict[str, to
         data = np.fromfile(f, dtype=np.float32, count=num_vertices * len(props))
     data = data.reshape(num_vertices, len(props))
     col = {name: i for i, name in enumerate(props)}
+    # InteriorGS PLYs come from decompressing 8-bit opacities; fully opaque splats (opacity 1.0) are written as
+    # logit(1) = +inf. They are typically more than half of a scene, so they must be kept, not filtered as corrupt.
+    opacity = data[:, col["opacity"]]
+    opacity[np.isposinf(opacity)] = OPAQUE_LOGIT
 
     def take(*names: str) -> np.ndarray:
         return data[:, [col[n] for n in names]]
