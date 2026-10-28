@@ -3,7 +3,7 @@
 - **Date:** 2026-10-27
 - **Owner:** Aidan Dempster (run by Claude Code)
 - **Status:** done (re-run on the final E001 checkpoint when it finishes)
-- **Commit(s):** the commit adding `src/pino/pca_render.py`
+- **Commit(s):** `ac2ba3c`
 - **Hypotheses:** H4, H6
 
 ## Question
