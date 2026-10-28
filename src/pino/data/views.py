@@ -75,8 +75,10 @@ class ViewGenerator:
         visibility_rel_tol: float = 0.03,
         visibility_abs_tol: float = 0.05,
         sh_degree: int = 3,
+        min_splats_per_view: int = 1024,
     ):
         self.teacher = teacher
+        self.min_splats_per_view = min_splats_per_view
         self.views_per_scene = views_per_scene
         self.image_size = image_size
         self.max_splats_per_view = max_splats_per_view
@@ -91,7 +93,8 @@ class ViewGenerator:
         self.sh_degree = sh_degree
 
     @torch.no_grad()
-    def __call__(self, samples: list[SceneSample], device: torch.device) -> ViewBatch:
+    def __call__(self, samples: list[SceneSample], device: torch.device) -> ViewBatch | None:
+        """Returns None if no candidate view of any scene contains enough splats."""
         images, viewmats, Ks, names = [], [], [], []
         crops: list[tuple[GaussianScene, torch.Tensor, torch.Tensor]] = []
         for sample in samples:
@@ -102,12 +105,16 @@ class ViewGenerator:
             keep = self._select_views(depth, alpha)
             for c in keep.tolist():
                 splat_ids, patch_index = self._crop_view(scene, cand_viewmats[c], cand_Ks[c], depth[c], alpha[c])
+                if splat_ids.numel() < self.min_splats_per_view:
+                    continue
                 crops.append((scene, splat_ids, patch_index))
                 images.append(rgb[c].permute(2, 0, 1))
                 viewmats.append(cand_viewmats[c])
                 Ks.append(cand_Ks[c])
                 names.append(scene.name)
 
+        if not crops:
+            return None
         images_t = torch.stack(images)
         teacher_out = self.teacher(images_t)
         splats = PackedSplats(
@@ -183,7 +190,7 @@ class ViewGenerator:
         ids = torch.nonzero(in_frustum).squeeze(1)
 
         # Depth test of the splat centre against the rendered depth -> visible splats and their patch.
-        u_i, v_i, z_i = u[ids].long(), v[ids].long(), z[ids]
+        u_i, v_i, z_i = u[ids].floor().long(), v[ids].floor().long(), z[ids]
         in_image = (u_i >= 0) & (u_i < width) & (v_i >= 0) & (v_i < height)
         u_c, v_c = u_i.clamp(0, width - 1), v_i.clamp(0, height - 1)
         surface = depth[v_c, u_c]

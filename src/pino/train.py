@@ -136,16 +136,20 @@ def validate(
     totals: dict[str, list[float]] = {}
     with torch.random.fork_rng(devices=[device]):
         torch.manual_seed(0)
-        for i, samples in enumerate(loader):
+        saved_vis = False
+        for samples in loader:
             batch = view_gen(samples, device)
-            loss, render_out, point_out = compute_losses(model, batch, app, augment=False, keep_renders=i == 0)
+            if batch is None:
+                continue
+            loss, render_out, point_out = compute_losses(model, batch, app, augment=False, keep_renders=not saved_vis)
             metrics = {"loss": loss.item(), "baseline/cos": constant_baseline_cos(batch), **render_out.metrics}
             if point_out is not None:
                 metrics.update(point_out.metrics)
             for k, v in metrics.items():
                 totals.setdefault(k, []).append(v)
-            if i == 0:
+            if not saved_vis:
                 save_alignment_grid(batch, render_out, vis_path)
+                saved_vis = True
     model.train()
     return {f"val/{k}": float(np.mean(v)) for k, v in totals.items()}
 
@@ -214,9 +218,10 @@ def main(cfg: DictConfig) -> None:
     t_last = time.time()
     for step in range(start_step, app.hparams.max_steps):
         t0 = time.time()
-        samples = next(train_iter)
+        batch = None
+        while batch is None:  # only None if every view of every scene in the batch was empty
+            batch = view_gen(next(train_iter), device)
         t_data = time.time() - t0
-        batch = view_gen(samples, device)
 
         for group in optimizer.param_groups:
             group["lr"] = lr_at(step, app)
@@ -227,7 +232,7 @@ def main(cfg: DictConfig) -> None:
         grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), app.hparams.grad_clip)
         optimizer.step()
 
-        metrics = {"loss": loss.item(), "grad_norm": grad_norm.item(), "data_wait_s": t_data, **render_out.metrics}
+        metrics = {"loss": loss.item(), "grad_norm": grad_norm.item(), "data_s": t_data, **render_out.metrics}
         if point_out is not None:
             metrics.update(point_out.metrics)
         for k, v in metrics.items():
