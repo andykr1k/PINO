@@ -50,8 +50,8 @@ everything specific to one experiment (launch scripts, probes, logs, visualisati
 | E002-r1 | 2026-10-27 | `ac2ba3c` | E001-r1 step-2k ckpt; scene 0001_839920 | — | PCA render separates furniture / floor / walls / ceiling; matches DINO in shared basis | Done |
 | E002-r2 | 2026-10-27 | `ac2ba3c` | E001-r1 step-2k ckpt; scene 0101_839973 | — | seats vs carpet separated despite same RGB colour; no tile seams | Done (pre-fix data) |
 | E003 | 2026-10-27 | `fc57aaf` | render comparison, old vs fixed loader | — | opaque splats were dropped; fixed renders gap-free | Done |
-| E004-r1 | 2026-10-27 | `fc57aaf` | `data.max_splats_per_view=200000` | 30k | step 2k: raw cos 0.645 vs baseline 0.463; std cos 0.492 | **Running** |
-| E005-r1 | 2026-10-27 | `760a296` | E004-r1 step-2k ckpt; 6 val scenes | — | PCA renders separate ceiling/wall/floor/furniture consistently with DINO across room types | Done |
+| E004-r1 | 2026-10-27 | `fc57aaf` | `data.max_splats_per_view=200000` | 30k | step 4k: raw cos 0.677 vs baseline 0.463; std cos 0.565; val loss 0.551 | **Running** |
+| E005-r1 | 2026-10-27 | `760a296` | E004-r1 step-2k and 4k ckpts; 6 val scenes | — | PCA renders separate ceiling/wall/floor/furniture consistently with DINO across room types | Done |
 
 Metric glossary: *raw cos* = `val/render/cos_raw`, cosine between rendered predicted features (mapped back to
 DINO space) and DINO patch tokens; *std cos* = `val/render/cos`, same in standardised target space (constant

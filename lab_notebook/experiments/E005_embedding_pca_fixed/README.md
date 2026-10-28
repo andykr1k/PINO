@@ -2,7 +2,7 @@
 
 - **Date:** 2026-10-27
 - **Owner:** Aidan Dempster (run by Claude Code)
-- **Status:** step 2000 done; step 4000 renders scheduled automatically
+- **Status:** done (steps 2000 and 4000)
 - **Commit(s):** `760a296`
 - **Hypotheses:** H4, H6 (redoes E002 without the E003 data bug)
 
@@ -28,6 +28,15 @@ Grid columns: RGB render | splat-embedding PCA render | DINO tokens of the RGB r
 - 0451 apartment: ceiling green, walls blue, floor pink, bed and low cabinets red.
 - DINO tokens projected onto the splat-fit basis use the same colour per category in every scene.
 - Walls show a vertical colour gradient (also present in DINO), i.e. part of the embedding varies with height.
+
+## Results (step 4000)
+- Same structure, holding across all six scenes (`logs/step4000/`):
+  - 0101 theatre: seats near-white, carpet red, walls yellow-green, ceiling beams blue; music stands/instruments
+    group with the seats.
+  - 0651 apartment: ceiling green, walls dark violet, floor yellow, sofa/bed magenta, door frames blue.
+  - 0851 living room: ceiling green, curtains/walls blue, floor pink, seating/tables dark red; the pink armchair
+    and grey sofa share a colour; chandelier arms are thin crisp lines (blobs in DINO's patch grid).
+- In every scene the DINO tokens projected onto the splat basis use the same colour per category.
 
 ## Interpretation
 - H6 holds on fixed data: splat embeddings share DINO's feature geometry at splat resolution.
