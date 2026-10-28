@@ -3,7 +3,7 @@
 - **Date:** 2026-10-28
 - **Owner:** Aidan Dempster (run by Claude Code)
 - **Status:** done
-- **Commit(s):** the commit adding `src/pino/object_probe.py` (see run table in the main README)
+- **Commit(s):** `6001868`
 - **Hypotheses:** H4
 
 ## Question

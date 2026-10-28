@@ -60,8 +60,8 @@ everything specific to one experiment (launch scripts, probes, logs, visualisati
 | E004-r1 | 2026-10-27 | `fc57aaf` | `data.max_splats_per_view=200000` | 30k | raw cos 0.809 (norm-corrected) vs baseline 0.463; std cos 0.723; val loss 0.359 | Done |
 | E005-r1 | 2026-10-27 | `760a296` | E004-r1 step-2k and 4k ckpts; 6 val scenes | — | PCA renders separate ceiling/wall/floor/furniture consistently with DINO across room types | Done |
 | E005-r2 | 2026-10-28 | `3fdd2ce` | E004-r1 final (30k) ckpt; 6 val scenes; L2-normalised PCA | — | finer categories (chairs vs tables, curtains vs walls); DINO agrees | Done |
-| E006-r1 | 2026-10-28 | `object_probe` commit | E004 step-30k ckpt; 150 train / 20 val scenes; 55 classes | — | splat bal. acc 0.499 (attr 0.214, random 0.159); object 0.573 (attr 0.499) | Done |
-| E006-r2/r3 | 2026-10-28 | `object_probe` commit | E004 step-2k / 10k ckpts | — | splat bal. acc 0.360 / 0.488; object 0.507 / 0.607 | Done |
+| E006-r1 | 2026-10-28 | `6001868` | E004 step-30k ckpt; 150 train / 20 val scenes; 55 classes | — | splat bal. acc 0.499 (attr 0.214, random 0.159); object 0.573 (attr 0.499) | Done |
+| E006-r2/r3 | 2026-10-28 | `6001868` | E004 step-2k / 10k ckpts | — | splat bal. acc 0.360 / 0.488; object 0.507 / 0.607 | Done |
 
 Metric glossary: *raw cos* = `val/render/cos_raw`, cosine between rendered predicted features (mapped back to
 DINO space) and DINO patch tokens; *std cos* = `val/render/cos`, same in standardised target space (constant
