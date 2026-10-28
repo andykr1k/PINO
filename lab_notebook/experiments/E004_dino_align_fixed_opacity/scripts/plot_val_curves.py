@@ -31,24 +31,29 @@ def load_val(run_dir: Path, fallback: Path) -> list[dict]:
     return [r for r in map(json.loads, path.read_text().splitlines()) if "val/loss" in r]
 
 
+e004 = load_val(MAIN / "outputs/e004_dino_align_fixed_opacity", EXP_DIR / "logs/metrics.jsonl")
+# Raw cosine as logged during training was distorted by unconstrained prediction norms (see README); the
+# corrected values come from scripts/revalidate.py, which re-scores every checkpoint.
+revalidated_path = EXP_DIR / "logs/metrics_revalidated.jsonl"
+revalidated = load_val(Path("/nonexistent"), revalidated_path) if revalidated_path.exists() else []
 runs = [
-    ("E004 (fixed data)", E004_COLOR, 2.0, 1.0,
-     load_val(MAIN / "outputs/e004_dino_align_fixed_opacity", EXP_DIR / "logs/metrics.jsonl")),
+    ("E004 (fixed data)", E004_COLOR, 2.0, 1.0, e004),
     ("E001 (pre-fix data, stopped)", E001_COLOR, 1.25, 0.55,
      load_val(MAIN / "outputs/dino_align_2026-10-27", REPO / "lab_notebook/experiments/E001_dino_align_baseline/logs/metrics.jsonl")),
 ]
 panels = [
-    ("val/loss", "Validation loss", "lower is better", None),
-    ("val/render/cos_raw", "Cosine to DINO tokens (raw)", "dashed: predict-the-mean baseline", "val/baseline/cos"),
-    ("val/render/cos", "Cosine in standardised space", "constant prediction ≈ 0", None),
+    ("val/loss", "Validation loss", "lower is better", None, runs),
+    ("val/render/cos_raw", "Cosine to DINO tokens (raw, norm-corrected)", "dashed: predict-the-mean baseline",
+     "val/baseline/cos", [runs[0][:4] + (revalidated or e004,)]),
+    ("val/render/cos", "Cosine in standardised space", "constant prediction ≈ 0", None, runs),
 ]
 
 plt.rcParams.update({"font.size": 10, "text.color": TEXT, "axes.labelcolor": TEXT_2,
                      "xtick.color": TEXT_2, "ytick.color": TEXT_2})
 fig, axes = plt.subplots(1, 3, figsize=(13, 4), sharex=True, facecolor=SURFACE)
-for ax, (key, title, note, baseline_key) in zip(axes, panels):
+for ax, (key, title, note, baseline_key, panel_runs) in zip(axes, panels):
     ax.set_facecolor(SURFACE)
-    for label, color, width, alpha, rows in runs:
+    for label, color, width, alpha, rows in panel_runs:
         steps = [r["step"] for r in rows]
         ax.plot(steps, [r[key] for r in rows], color=color, lw=width, alpha=alpha, marker="o", ms=4, label=label)
         if baseline_key:

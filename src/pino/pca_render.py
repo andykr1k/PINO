@@ -16,6 +16,7 @@ from pathlib import Path
 
 import numpy as np
 import torch
+import torch.nn.functional as F
 from PIL import Image
 
 from pino.config_schema import AppConfig
@@ -116,9 +117,10 @@ class PCAColoring:
 
 
 def to_space(model: SplatTransformer, features: torch.Tensor, space: str, chunk: int = 262144) -> torch.Tensor:
+    """Unit-normalised embeddings: the loss is a cosine, so only direction is meaningful (norms drift in training)."""
     if space == "embedding":
-        return features
-    return torch.cat([model.project(features[i : i + chunk]) for i in range(0, features.shape[0], chunk)])
+        return F.normalize(features, dim=-1)
+    return torch.cat([F.normalize(model.project(features[i : i + chunk]), dim=-1) for i in range(0, features.shape[0], chunk)])
 
 
 def colors_to_sh(colors: torch.Tensor) -> torch.Tensor:
@@ -217,7 +219,7 @@ def main() -> None:
 
     dino_colors = None
     if args.space == "dino":
-        dino_colors = coloring(model.standardize_targets(batch.teacher.patch_tokens))
+        dino_colors = coloring(F.normalize(model.standardize_targets(batch.teacher.patch_tokens), dim=-1))
     patch = height // batch.patch_grid[0]
     rows = []
     for b in range(batch.images.shape[0]):

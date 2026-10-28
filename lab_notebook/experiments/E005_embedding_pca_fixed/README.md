@@ -2,7 +2,7 @@
 
 - **Date:** 2026-10-27
 - **Owner:** Aidan Dempster (run by Claude Code)
-- **Status:** done (steps 2000 and 4000)
+- **Status:** done (steps 2000, 4000, 30000)
 - **Commit(s):** `760a296`
 - **Hypotheses:** H4, H6 (redoes E002 without the E003 data bug)
 
@@ -37,6 +37,15 @@ Grid columns: RGB render | splat-embedding PCA render | DINO tokens of the RGB r
   - 0851 living room: ceiling green, curtains/walls blue, floor pink, seating/tables dark red; the pink armchair
     and grey sofa share a colour; chandelier arms are thin crisp lines (blobs in DINO's patch grid).
 - In every scene the DINO tokens projected onto the splat basis use the same colour per category.
+
+## Results (step 30000, final)
+- `logs/step30000/`. PCA now runs on L2-normalised embeddings (and L2-normalised standardised DINO tokens), since
+  prediction norms drift during training (E004/H7); earlier steps used unnormalised embeddings, which over-saturated
+  the DINO column.
+- Finer categories than at 4k: in the restaurant, chairs (magenta) now separate from tables (orange-brown); walls/
+  pillars dark green, ceiling light green, back walls/windows blue, floor pale pink. In the 0851 living room,
+  curtains (dark red) separate from walls (violet), armchairs orange, floor yellow, ceiling green.
+- DINO tokens in the same basis keep the same per-category colours.
 
 ## Interpretation
 - H6 holds on fixed data: splat embeddings share DINO's feature geometry at splat resolution.

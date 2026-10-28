@@ -152,8 +152,15 @@ class SplatTransformer(nn.Module):
         return (tokens - self.target_mean) / self.target_std
 
     def to_teacher_space(self, projected: torch.Tensor) -> torch.Tensor:
-        """Inverse of `standardize_targets`: projected embeddings -> raw DINO token space."""
-        return projected * self.target_std + self.target_mean
+        """Inverse of `standardize_targets`: projected embeddings -> raw DINO token space.
+
+        The cosine loss leaves the norm of `projected` unconstrained (it shrinks during training), and the
+        de-standardised direction depends on it, so predictions are first rescaled to the expected norm of a
+        standardised target, sqrt(teacher_dim) (unit variance per channel).
+        """
+        norm = projected.norm(dim=-1, keepdim=True).clamp(min=1e-6)
+        rescaled = projected * (math.sqrt(projected.shape[-1]) / norm)
+        return rescaled * self.target_std + self.target_mean
 
     @staticmethod
     def normalize_inputs(splats: PackedSplats) -> tuple[torch.Tensor, torch.Tensor]:
