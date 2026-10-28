@@ -2,7 +2,7 @@
 
 - **Date:** 2026-10-27
 - **Owner:** Aidan Dempster (run by Claude Code)
-- **Status:** done (re-run on the final E001 checkpoint when it finishes)
+- **Status:** done — on pre-fix data (E003 bug: opaque splats dropped); redone with E004 checkpoints in E005
 - **Commit(s):** `ac2ba3c`
 - **Hypotheses:** H4, H6
 
