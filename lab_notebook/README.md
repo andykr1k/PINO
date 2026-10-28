@@ -24,6 +24,7 @@ everything specific to one experiment (launch scripts, probes, logs, visualisati
 | H6 | Per-splat embeddings live in DINO's feature geometry but at splat (not 16-px patch) resolution. | **Supported (qualitative)** | E005: one PCA basis fit on splat embeddings colours both the splat render and the DINO tokens consistently in 6 held-out scenes; thin structures (chair legs, chandelier arms) stay sharp. |
 | H7 | With a cosine loss in standardised space, prediction norms drift, so any metric/consumer that de-standardises (`pred·std + mean`) must first fix the norm. | **Supported** | E004: |pred| shrank 12.0 → 5.4 (target 33.7); logged raw cosine fell 0.704 → 0.623 while norm-corrected raw cosine rose to 0.809. Fixed in `to_teacher_space`. |
 | H8 | Training on higher-resolution renders (more, smaller DINO patches) improves object identification, especially for small objects. | Testing (E007) | E006: small tabletop classes ≈ 0 recall at 448². |
+| H9 | SplatFormer's PTv3 encoder (every splat a token, serialized patch attention along space-filling curves that change per block, multi-scale U-Net) distills DINO better than our SplatTransformer (fixed FPS/Voronoi groups, one scale) at matched data, loss and steps. | Testing (E008 vs E007) | — |
 | H5 | The differentiable rendered-feature loss is what drives learning; the per-splat point loss is a cheap, sufficient substitute (or vice versa). | Untested | Planned ablation: `loss.point_weight=0` vs `loss.render_weight=0`. |
 
 ## What has been tested
@@ -46,6 +47,9 @@ everything specific to one experiment (launch scripts, probes, logs, visualisati
   balanced accuracy vs 0.214 / 0.499 for Fourier-expanded raw attributes.
 - **Embedding PCA renders (E002).** `python -m pino.pca_render` embeds a whole scene (tiled like training crops),
   colours splats by the top-3 PCA components and renders them next to RGB and the DINO tokens in the same basis.
+- **SplatFormer baseline (E008).** `model.arch=splatformer` swaps in SplatFormer's PTv3 encoder (47.9M params vs
+  14.8M), vendored from its pinned Pointcept fork. Checked: SDPA stand-in for flash-attn matches reference attention
+  (6e-7); activation checkpointing gives identical outputs/gradients. ~2.7 s/step vs ~0.8 s, ~37 GB at 896².
 
 ## Runs
 
@@ -64,6 +68,7 @@ everything specific to one experiment (launch scripts, probes, logs, visualisati
 | E006-r1 | 2026-10-28 | `6001868` | E004 step-30k ckpt; 150 train / 20 val scenes; 55 classes | — | splat bal. acc 0.499 (attr 0.214, random 0.159); object 0.573 (attr 0.499) | Done |
 | E007-r1 | 2026-10-28 | `ed4d30e` | `data.image_size=[896,896]`, `data.max_splats_per_view=200000` | 30k | pending (primary metric: E006 probe) | **Running** |
 | E006-r2/r3 | 2026-10-28 | `6001868` | E004 step-2k / 10k ckpts | — | splat bal. acc 0.360 / 0.488; object 0.507 / 0.607 | Done |
+| E008-r1 | 2026-10-28 | `ca81393` | E007-r1 config + `model.arch=splatformer` (GPU 4) | 30k | pending (compare with E007-r1: val cosines + E006 probe) | **Running** |
 
 Metric glossary: *raw cos* = `val/render/cos_raw`, cosine between rendered predicted features (mapped back to
 DINO space) and DINO patch tokens; *std cos* = `val/render/cos`, same in standardised target space (constant
