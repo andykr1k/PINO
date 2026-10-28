@@ -30,6 +30,18 @@ teacher:
   local_files_only: true
 
 model:
+  arch: splat_transformer  # or splatformer (PTv3 baseline, settings below)
+  splatformer:
+    grid_resolution: 384
+    enc_dim: 64
+    backbone_dim: 96
+    stride: [1, 2, 2, 2]
+    patch_size: 1024
+    drop_path: 0.3
+    head_nlayer: 4
+    head_width: 128
+    grad_checkpoint: true
+  # SplatTransformer settings (out_dim is shared)
   num_groups: 1024
   fps_subset: 16384
   splat_dim: 128

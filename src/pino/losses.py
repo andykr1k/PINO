@@ -5,7 +5,7 @@ import torch
 import torch.nn.functional as F
 
 from pino.data.views import ViewBatch
-from pino.model import SplatTransformer
+from pino.model import TeacherAlignedModel
 from pino.render import render_features
 
 
@@ -18,7 +18,7 @@ class AlignmentOutput:
 
 
 def rendered_alignment_loss(
-    model: SplatTransformer,
+    model: TeacherAlignedModel,
     features: torch.Tensor,
     batch: ViewBatch,
     downsample: int = 4,
@@ -85,7 +85,7 @@ def rendered_alignment_loss(
 
 
 def point_alignment_loss(
-    model: SplatTransformer,
+    model: TeacherAlignedModel,
     features: torch.Tensor,
     batch: ViewBatch,
     max_splats: int = 65536,

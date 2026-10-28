@@ -1,4 +1,4 @@
-"""Embeds every splat of a scene with a trained SplatTransformer, maps the top-3 PCA components of the
+"""Embeds every splat of a scene with a trained splat encoder, maps the top-3 PCA components of the
 embeddings to RGB, and renders the scene with those colours.
 
 Outputs (in --out):
@@ -23,7 +23,7 @@ from pino.config_schema import AppConfig
 from pino.data.dataset import InteriorGSScenes, split_scenes
 from pino.data.scene import SH_C0, GaussianScene, load_scene
 from pino.data.views import PackedSplats, ViewGenerator
-from pino.model import SplatTransformer
+from pino.model import TeacherAlignedModel, build_model
 from pino.render import render_rgbd
 from pino.teacher import DINOv3Teacher
 
@@ -66,7 +66,7 @@ def tile_scene(
 
 @torch.no_grad()
 def embed_scene(
-    model: SplatTransformer,
+    model: TeacherAlignedModel,
     scene: GaussianScene,
     max_core: int = 100_000,
     margin: float = 1.0,
@@ -79,7 +79,7 @@ def embed_scene(
     torch.manual_seed(seed)
     tiles = tile_scene(scene.means, max_core, margin, max_context, generator)
     rgb = scene.rgb
-    features = torch.zeros(scene.num_splats, model.decoder[-1].out_features, device=scene.means.device)
+    features = torch.zeros(scene.num_splats, model.out_dim, device=scene.means.device)
     for start in range(0, len(tiles), tiles_per_batch):
         chunk = tiles[start : start + tiles_per_batch]
         ids = torch.cat([t for t, _ in chunk])
@@ -116,7 +116,7 @@ class PCAColoring:
         return {"mean": self.mean, "basis": self.basis, "lo": self.lo, "hi": self.hi}
 
 
-def to_space(model: SplatTransformer, features: torch.Tensor, space: str, chunk: int = 262144) -> torch.Tensor:
+def to_space(model: TeacherAlignedModel, features: torch.Tensor, space: str, chunk: int = 262144) -> torch.Tensor:
     """Unit-normalised embeddings: the loss is a cosine, so only direction is meaningful (norms drift in training)."""
     if space == "embedding":
         return F.normalize(features, dim=-1)
@@ -179,7 +179,7 @@ def main() -> None:
     app = AppConfig(**ckpt["config"])
     teacher = DINOv3Teacher(app.teacher.checkpoint, cache_dir=app.teacher.cache_dir,
                             local_files_only=app.teacher.local_files_only).to(device)
-    model = SplatTransformer(teacher_dim=teacher.embed_dim, **app.model.model_dump()).to(device).eval()
+    model = build_model(app.model, teacher.embed_dim).to(device).eval()
     model.load_state_dict(ckpt["model"])
     print(f"Loaded {args.ckpt} (step {ckpt['step']})")
 

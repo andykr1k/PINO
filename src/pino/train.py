@@ -21,7 +21,7 @@ from pino.config_schema import AppConfig
 from pino.data.dataset import InteriorGSScenes, SceneSample, collate_scene_samples, split_scenes
 from pino.data.views import ViewBatch, ViewGenerator, random_z_rotation
 from pino.losses import AlignmentOutput, constant_baseline_cos, point_alignment_loss, rendered_alignment_loss
-from pino.model import SplatTransformer
+from pino.model import TeacherAlignedModel, build_model
 from pino.teacher import DINOv3Teacher
 
 
@@ -75,7 +75,7 @@ def lr_at(step: int, app: AppConfig) -> float:
 
 
 def compute_losses(
-    model: SplatTransformer, batch: ViewBatch, app: AppConfig, augment: bool, keep_renders: bool = False
+    model: TeacherAlignedModel, batch: ViewBatch, app: AppConfig, augment: bool, keep_renders: bool = False
 ) -> tuple[torch.Tensor, AlignmentOutput, AlignmentOutput | None]:
     splats = random_z_rotation(batch.splats) if augment and app.loss.rotate_inputs else batch.splats
     with torch.autocast("cuda", dtype=torch.bfloat16):
@@ -130,7 +130,7 @@ def save_alignment_grid(batch: ViewBatch, render_out: AlignmentOutput, path: Pat
 
 @torch.no_grad()
 def validate(
-    model: SplatTransformer, view_gen: ViewGenerator, loader: DataLoader, app: AppConfig, device: torch.device, vis_path: Path
+    model: TeacherAlignedModel, view_gen: ViewGenerator, loader: DataLoader, app: AppConfig, device: torch.device, vis_path: Path
 ) -> dict[str, float]:
     model.eval()
     totals: dict[str, list[float]] = {}
@@ -177,8 +177,8 @@ def main(cfg: DictConfig) -> None:
         max_splats_per_view=app.data.max_splats_per_view,
         max_depth=app.data.max_depth,
     )
-    model = SplatTransformer(teacher_dim=teacher.embed_dim, **app.model.model_dump()).to(device)
-    print(f"SplatTransformer: {sum(p.numel() for p in model.parameters()) / 1e6:.2f}M parameters")
+    model = build_model(app.model, teacher.embed_dim).to(device)
+    print(f"{type(model).__name__}: {sum(p.numel() for p in model.parameters()) / 1e6:.2f}M parameters")
 
     decay = [p for n, p in model.named_parameters() if p.ndim >= 2]
     no_decay = [p for n, p in model.named_parameters() if p.ndim < 2]

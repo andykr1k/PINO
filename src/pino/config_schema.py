@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Literal, Optional
 from pydantic import BaseModel, Field
 
 class DatasetConfig(BaseModel):
@@ -39,7 +39,22 @@ class TeacherConfig(BaseModel):
     cache_dir: Optional[str] = Field(None, description="HF cache dir (defaults to HF_HOME)")
     local_files_only: bool = Field(True, description="Load the teacher from the local HF cache only")
 
+class SplatFormerConfig(BaseModel):
+    grid_resolution: int = Field(384, description="Voxels per unit of the min-max normalised view (SplatFormer)")
+    enc_dim: int = Field(64, description="PTv3 encoder width preset (32 or 64)")
+    backbone_dim: int = Field(96, description="PTv3 decoder output width preset (64, 96 or 128)")
+    stride: tuple[int, ...] = Field((1, 2, 2, 2), description="Serialized pooling strides between encoder stages")
+    patch_size: int = Field(1024, description="Splats per serialized attention patch")
+    drop_path: float = Field(0.3, description="Maximum stochastic depth rate")
+    head_nlayer: int = Field(4, description="Layers of the per-splat ReLU MLP head")
+    head_width: int = Field(128, description="Width of the per-splat head")
+    grad_checkpoint: bool = Field(True, description="Recompute PTv3 blocks in backward (needed for ~1.8M splats/batch)")
+
 class ModelConfig(BaseModel):
+    arch: Literal["splat_transformer", "splatformer"] = Field(
+        "splat_transformer", description="Splat encoder: our SplatTransformer or the SplatFormer (PTv3) baseline"
+    )
+    splatformer: SplatFormerConfig = Field(default_factory=SplatFormerConfig, description="Used when arch=splatformer")
     num_groups: int = Field(1024, description="FPS group centres (transformer tokens) per view")
     fps_subset: int = Field(16384, description="Splats subsampled per view before running FPS")
     splat_dim: int = Field(128, description="Per-splat point feature width")

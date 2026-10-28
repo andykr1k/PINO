@@ -13,9 +13,13 @@ Pipeline (per view, batched over views):
 
 `project` maps splat embeddings into the teacher (DINO) space. It is linear, so it commutes with
 alpha blending: projecting a rendered embedding map equals rendering the projected embeddings.
+
+`TeacherAlignedModel` holds that projection and the teacher-target statistics; `build_model` picks the encoder
+(this SplatTransformer, or the SplatFormer baseline in `pino.splatformer`).
 """
 import math
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 import torch
 import torch.nn.functional as F
@@ -23,12 +27,15 @@ from torch import nn
 
 from pino.data.views import PackedSplats
 
+if TYPE_CHECKING:
+    from pino.config_schema import ModelConfig
+
 
 @dataclass
 class SplatEncoding:
     features: torch.Tensor  # (S, out_dim) per-splat embeddings
-    tokens: torch.Tensor  # (B, G, token_dim) group tokens after the transformer
-    centers: torch.Tensor  # (B, G, 3) group centres (model frame)
+    tokens: torch.Tensor | None = None  # (B, G, token_dim) group tokens after the transformer (SplatTransformer)
+    centers: torch.Tensor | None = None  # (B, G, 3) group centres, model frame (SplatTransformer)
 
 
 class FourierFeatures(nn.Module):
@@ -93,35 +100,13 @@ def knn_to_centers(points: torch.Tensor, centers: torch.Tensor, k: int, chunk: i
     return torch.cat(dists), torch.cat(idxs)
 
 
-class SplatTransformer(nn.Module):
-    def __init__(
-        self,
-        num_groups: int = 1024,
-        fps_subset: int = 16384,
-        splat_dim: int = 128,
-        token_dim: int = 384,
-        depth: int = 8,
-        num_heads: int = 6,
-        out_dim: int = 128,
-        teacher_dim: int = 1024,
-        k_interp: int = 3,
-    ):
+class TeacherAlignedModel(nn.Module):
+    """Base for splat encoders: `forward(PackedSplats) -> SplatEncoding` with `out_dim`-wide per-splat features,
+    plus the linear projection into (standardised) teacher space shared by the losses."""
+
+    def __init__(self, out_dim: int, teacher_dim: int):
         super().__init__()
-        self.num_groups = num_groups
-        self.fps_subset = fps_subset
-        self.k_interp = k_interp
-
-        self.local_pos_enc = FourierFeatures(3, num_freqs=6, min_wavelength=0.02, max_wavelength=2.0)
-        self.center_pos_enc = FourierFeatures(3, num_freqs=8, min_wavelength=0.1, max_wavelength=32.0)
-        attr_dim = 11  # rgb (3), log-scale (3), quaternion (4), opacity (1)
-
-        self.point_embed = mlp(self.local_pos_enc.out_dim + attr_dim, splat_dim, splat_dim)
-        self.point_refine = mlp(2 * splat_dim, 2 * splat_dim, splat_dim)
-        self.token_embed = nn.Linear(splat_dim, token_dim)
-        self.center_embed = mlp(self.center_pos_enc.out_dim, token_dim, token_dim)
-        self.blocks = nn.ModuleList([Block(token_dim, num_heads) for _ in range(depth)])
-        self.norm = nn.LayerNorm(token_dim)
-        self.decoder = mlp(splat_dim + token_dim, 2 * splat_dim, out_dim)
+        self.out_dim = out_dim
         self.head = nn.Linear(out_dim, teacher_dim)
 
         # Running per-channel statistics of the teacher tokens. DINO patch tokens share a large common
@@ -161,6 +146,40 @@ class SplatTransformer(nn.Module):
         norm = projected.norm(dim=-1, keepdim=True).clamp(min=1e-6)
         rescaled = projected * (math.sqrt(projected.shape[-1]) / norm)
         return rescaled * self.target_std + self.target_mean
+
+    def forward(self, splats: PackedSplats) -> SplatEncoding:
+        raise NotImplementedError
+
+
+class SplatTransformer(TeacherAlignedModel):
+    def __init__(
+        self,
+        num_groups: int = 1024,
+        fps_subset: int = 16384,
+        splat_dim: int = 128,
+        token_dim: int = 384,
+        depth: int = 8,
+        num_heads: int = 6,
+        out_dim: int = 128,
+        teacher_dim: int = 1024,
+        k_interp: int = 3,
+    ):
+        super().__init__(out_dim, teacher_dim)
+        self.num_groups = num_groups
+        self.fps_subset = fps_subset
+        self.k_interp = k_interp
+
+        self.local_pos_enc = FourierFeatures(3, num_freqs=6, min_wavelength=0.02, max_wavelength=2.0)
+        self.center_pos_enc = FourierFeatures(3, num_freqs=8, min_wavelength=0.1, max_wavelength=32.0)
+        attr_dim = 11  # rgb (3), log-scale (3), quaternion (4), opacity (1)
+
+        self.point_embed = mlp(self.local_pos_enc.out_dim + attr_dim, splat_dim, splat_dim)
+        self.point_refine = mlp(2 * splat_dim, 2 * splat_dim, splat_dim)
+        self.token_embed = nn.Linear(splat_dim, token_dim)
+        self.center_embed = mlp(self.center_pos_enc.out_dim, token_dim, token_dim)
+        self.blocks = nn.ModuleList([Block(token_dim, num_heads) for _ in range(depth)])
+        self.norm = nn.LayerNorm(token_dim)
+        self.decoder = mlp(splat_dim + token_dim, 2 * splat_dim, out_dim)
 
     @staticmethod
     def normalize_inputs(splats: PackedSplats) -> tuple[torch.Tensor, torch.Tensor]:
@@ -233,3 +252,13 @@ class SplatTransformer(nn.Module):
         out = out.scatter_reduce(0, group_id[:, None].expand_as(x), x, reduce="amax", include_self=True)
         # FPS on a sampled subset can pick duplicate centres, leaving some groups empty.
         return torch.where(torch.isfinite(out), out, torch.zeros_like(out))
+
+
+def build_model(config: "ModelConfig", teacher_dim: int) -> TeacherAlignedModel:
+    if config.arch == "splat_transformer":
+        return SplatTransformer(teacher_dim=teacher_dim, **config.model_dump(exclude={"arch", "splatformer"}))
+    if config.arch == "splatformer":
+        from pino.splatformer import SplatFormer
+
+        return SplatFormer(out_dim=config.out_dim, teacher_dim=teacher_dim, **config.splatformer.model_dump())
+    raise ValueError(f"Unknown model arch {config.arch!r}")

@@ -70,6 +70,16 @@ JIT-compile its CUDA kernels on first use (cached afterwards). Outputs (metrics.
 
 `val/baseline/cos` is the score of predicting the mean DINO token; `val/render/cos_raw` must beat it.
 
+**SplatFormer baseline.** `model.arch=splatformer` swaps the encoder for SplatFormer's Point Transformer V3
+backbone (`pino.splatformer`, vendored PTv3 in `src/pino/third_party/pointcept/`). Every splat is a token,
+views are min-max normalised and voxelised at 1/384, and attention runs over patches of 1024 splats along
+space-filling curves that change from block to block, in a multi-scale U-Net. Data, losses and projection head are
+shared with `SplatTransformer`. Needs `spconv-cu126` (installed by `uv sync`).
+
+```bash
+uv run python -m pino.train model.arch=splatformer
+```
+
 To inspect a checkpoint, colour every splat of a scene by the top-3 PCA components of its embedding and render it
 (also writes a PCA-coloured `.ply`; `--viser` serves it interactively):
 

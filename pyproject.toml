@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "addict>=2.4.0",
     "aidan-lib[compiled_dino]",
     "dotenv>=0.9.9",
     "gsplat>=1.5.3",
@@ -15,6 +16,7 @@ dependencies = [
     "pydantic>=2.13.4",
     "pyrefly>=1.0.0",
     "pyyaml>=6.0.3",
+    "spconv-cu126>=2.3.8",
     "transformers>=4.56",
     "viser>=1.0.30",
 ]
