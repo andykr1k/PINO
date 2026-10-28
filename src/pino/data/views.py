@@ -135,20 +135,26 @@ class ViewGenerator:
             scene_names=names,
         )
 
-    def _render(self, scene: GaussianScene, viewmats: torch.Tensor, Ks: torch.Tensor):
+    def _render(self, scene: GaussianScene, viewmats: torch.Tensor, Ks: torch.Tensor, cameras_per_call: int = 4):
+        """Renders cameras a few at a time: gsplat counts tile intersections in 32 bits, and a batch of whole-scene
+        cameras (some inside geometry, so near splats cover every tile) can overflow it at high resolution."""
         height, width = self.image_size
-        return render_rgbd(
-            scene.means,
-            scene.quats,
-            scene.log_scales,
-            scene.opacity_logits,
-            scene.sh,
-            viewmats,
-            Ks,
-            width,
-            height,
-            sh_degree=self.sh_degree,
-        )
+        outs = [
+            render_rgbd(
+                scene.means,
+                scene.quats,
+                scene.log_scales,
+                scene.opacity_logits,
+                scene.sh,
+                viewmats[i : i + cameras_per_call],
+                Ks[i : i + cameras_per_call],
+                width,
+                height,
+                sh_degree=self.sh_degree,
+            )
+            for i in range(0, viewmats.shape[0], cameras_per_call)
+        ]
+        return tuple(torch.cat(parts) for parts in zip(*outs))
 
     def _select_views(self, depth: torch.Tensor, alpha: torch.Tensor) -> torch.Tensor:
         """Picks `views_per_scene` candidates, preferring ones that pass all quality checks."""

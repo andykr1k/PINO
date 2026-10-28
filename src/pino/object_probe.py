@@ -8,13 +8,17 @@ Feature sets compared:
   - model:      trained SplatTransformer embeddings, projected to DINO space and L2-normalised
   - random:     the same architecture with random weights (what the architecture alone gives)
   - attributes: raw splat attributes (rgb, log-scale, opacity, quaternion, height) with Fourier expansion
+  - dino_lifted (with --lift-views > 0): the teacher's own patch tokens from rendered views, lifted onto splats by
+    blend-weighted averaging (pino.lift); an upper bound for what the student could have learned. All feature sets
+    are then evaluated on the same splats: those visible in at least one lifting view.
 
-    CUDA_HOME=/usr/local/cuda-13.0 uv run python -m pino.object_probe --ckpt <ckpt> --out <dir>
+    CUDA_HOME=/usr/local/cuda-13.0 uv run python -m pino.object_probe --ckpt <ckpt> --out <dir> [--lift-views 24]
 """
 import argparse
 import collections
 import json
 import time
+import zlib
 from pathlib import Path
 
 import numpy as np
@@ -24,10 +28,15 @@ import torch.nn.functional as F
 from pino.config_schema import AppConfig
 from pino.data.dataset import split_scenes
 from pino.data.scene import GaussianScene, load_scene
+from pino.data.views import ViewGenerator
+from pino.lift import embed_views, lift_teacher_features, sample_good_views
 from pino.model import FourierFeatures, SplatTransformer
 from pino.pca_render import embed_scene
+from pino.teacher import DINOv3Teacher
 
 FEATURE_SETS = ("model", "random", "attributes")
+LIFTED = "dino_lifted"
+VIEW_AVG = "model_views"
 
 
 def load_boxes(scene_dir: Path) -> list[tuple[str, np.ndarray]]:
@@ -106,13 +115,27 @@ def extract_scene(
     min_splats: int,
     generator: torch.Generator,
     device: torch.device,
+    lifter: dict | None = None,
 ) -> dict[str, dict[str, torch.Tensor]] | None:
+    """`lifter` (optional): {"view_gen", "teacher", "num_views", "oversample", "seed"} to add lifted DINO features."""
     boxes = [(label, corners) for label, corners in load_boxes(scene_dir) if label in class_index]
     if not boxes:
         return None
     scene = load_scene(scene_dir, min_opacity=app.data.min_opacity).to(device)
     owner = assign_instances(scene.means, [c for _, c in boxes])
     owner[scene.opacity_logits.sigmoid() < 0.1] = -1  # near-transparent splats carry little appearance
+
+    lifted = view_avg = None
+    if lifter is not None:
+        images, viewmats, Ks, depths, alphas = sample_good_views(
+            scene, lifter["view_gen"], lifter["num_views"], lifter["oversample"], app.data.hfov_range_deg,
+            app.data.height_range, app.data.pitch_range_deg, seed=lifter["seed"] + zlib.crc32(scene_dir.name.encode()),
+        )
+        lifted, seen = lift_teacher_features(scene, lifter["teacher"], images, viewmats, Ks,
+                                             downsample=app.loss.render_downsample)
+        view_avg, crop_count = embed_views(models["model"], scene, lifter["view_gen"], viewmats, Ks, depths, alphas)
+        # Compare every feature set on splats the lifting views actually see (and the student's crops contain).
+        owner[(seen <= 0) | (crop_count <= 0)] = -1
 
     embeddings = {name: embed_scene(m, scene) for name, m in models.items()}
     counts = torch.bincount(owner[owner >= 0], minlength=len(boxes))
@@ -141,9 +164,15 @@ def extract_scene(
         return F.normalize(sums, dim=-1)
 
     out: dict[str, dict[str, torch.Tensor]] = {}
-    for name in FEATURE_SETS:
+    for name in FEATURE_SETS + ((LIFTED, VIEW_AVG) if lifted is not None else ()):
         if name == "attributes":
             splat_feats, all_feats = attribute_features(scene, ids), attribute_features(scene, members)
+        elif name == VIEW_AVG:
+            splat_feats, all_feats = F.normalize(view_avg[ids], dim=-1), F.normalize(view_avg[members], dim=-1)
+        elif name == LIFTED:
+            # Standardise with the trained student's running teacher-token statistics (same space as its targets).
+            to_unit = lambda t: F.normalize(models["model"].standardize_targets(t), dim=-1)  # noqa: E731
+            splat_feats, all_feats = to_unit(lifted[ids]), to_unit(lifted[members])
         else:
             model = models[name]
             splat_feats = project_unit(model, embeddings[name][ids])
@@ -197,6 +226,9 @@ def main() -> None:
     parser.add_argument("--splats-per-instance", type=int, default=32)
     parser.add_argument("--min-splats", type=int, default=16, help="Skip instances with fewer labelled splats")
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--lift-views", type=int, default=0, help="Views per scene for lifted DINO features (0 = off)")
+    parser.add_argument("--lift-oversample", type=int, default=3, help="Candidate cameras per kept lifting view")
+    parser.add_argument("--lift-size", type=int, default=None, help="Lifting render size (default: training size)")
     args = parser.parse_args()
 
     device = torch.device("cuda")
@@ -221,14 +253,27 @@ def main() -> None:
     attribute_features = AttributeFeatures(device)
     generator = torch.Generator(device=device).manual_seed(args.seed)
 
+    lifter = None
+    feature_names = FEATURE_SETS
+    if args.lift_views > 0:
+        teacher = DINOv3Teacher(app.teacher.checkpoint, cache_dir=app.teacher.cache_dir,
+                                local_files_only=app.teacher.local_files_only).to(device)
+        size = args.lift_size or app.data.image_size[0]
+        view_gen = ViewGenerator(teacher, views_per_scene=args.lift_views * args.lift_oversample,
+                                 image_size=(size, size), max_splats_per_view=app.data.max_splats_per_view)
+        lifter = {"view_gen": view_gen, "teacher": teacher, "num_views": args.lift_views,
+                  "oversample": args.lift_oversample, "seed": args.seed}
+        feature_names = FEATURE_SETS + (LIFTED, VIEW_AVG)
+        print(f"Lifting DINO features from {args.lift_views} views/scene at {size}x{size}")
+
     data: dict[str, dict[str, dict[str, list[torch.Tensor]]]] = {
-        split: {name: collections.defaultdict(list) for name in FEATURE_SETS} for split in ("train", "val")
+        split: {name: collections.defaultdict(list) for name in feature_names} for split in ("train", "val")
     }
     start = time.time()
     for split, dirs in (("train", probe_train_dirs), ("val", val_dirs)):
         for i, scene_dir in enumerate(dirs):
             scene_out = extract_scene(scene_dir, class_index, models, attribute_features, app,
-                                      args.splats_per_instance, args.min_splats, generator, device)
+                                      args.splats_per_instance, args.min_splats, generator, device, lifter)
             if scene_out is None:
                 continue
             for name, tensors in scene_out.items():
@@ -238,9 +283,10 @@ def main() -> None:
                 print(f"  {split}: {i + 1}/{len(dirs)} scenes ({time.time() - start:.0f}s)", flush=True)
 
     results = {"ckpt": str(args.ckpt), "step": ckpt["step"], "classes": classes,
-               "train_scenes": len(probe_train_dirs), "val_scenes": len(val_dirs), "levels": {}}
+               "train_scenes": len(probe_train_dirs), "val_scenes": len(val_dirs), "lift_views": args.lift_views,
+               "lift_size": (args.lift_size or app.data.image_size[0]) if args.lift_views else None, "levels": {}}
     for level in ("splat", "inst"):
-        for name in FEATURE_SETS:
+        for name in feature_names:
             tr = {k: torch.cat(v) for k, v in data["train"][name].items()}
             va = {k: torch.cat(v) for k, v in data["val"][name].items()}
             probe = train_linear_probe(tr[f"{level}_x"], tr[f"{level}_y"], len(classes), device)

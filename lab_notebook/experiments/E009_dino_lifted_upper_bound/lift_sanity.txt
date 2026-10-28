@@ -1,0 +1,2 @@
+0001_839920: 846540 splats, 0.77 seen by 16 views | std cos — lifted seen 0.920, lifted held-out 0.478, student whole-scene tiles 0.416, student frustum crops 0.644
+0451_840422: 646061 splats, 0.70 seen by 16 views | std cos — lifted seen 0.896, lifted held-out 0.394, student whole-scene tiles 0.393, student frustum crops 0.727
