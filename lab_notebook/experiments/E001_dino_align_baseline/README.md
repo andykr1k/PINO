@@ -2,7 +2,7 @@
 
 - **Date:** 2026-10-27
 - **Owner:** Aidan Dempster (run by Claude Code)
-- **Status:** stopped at step ~3.2k — data bug found in E003 (opaque splats dropped); superseded by E004
+- **Status:** stopped right after step 4000 — data bug found in E003 (opaque splats dropped); superseded by E004
 - **Commit(s):** `c43c996`
 - **Hypotheses:** H1 (also informs H3)
 
@@ -33,6 +33,7 @@ Validation (20 held-out scenes), snapshot of `logs/metrics.jsonl`:
 | 1000 | 0.369 | 0.608 | 0.575 | 0.506 |
 | 2000 | 0.447 | 0.630 | 0.614 | 0.506 |
 | 3000 | 0.509 | 0.655 | 0.652 | 0.506 |
+| 4000 | 0.528 | 0.662 | 0.662 | 0.506 |
 
 `logs/vis/val_001000.jpg`: predictions capture coarse layout (ceiling / walls / floor / room boundaries) at lower
 contrast than DINO; little object-level detail yet.

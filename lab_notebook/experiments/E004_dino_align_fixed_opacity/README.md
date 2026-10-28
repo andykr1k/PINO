@@ -22,7 +22,17 @@ views of held-out scenes when the scenes are complete?
 | E004-r1 | `data.max_splats_per_view=200000` | 30k | `/scratch4/home/adempst/projects/PINO/outputs/e004_dino_align_fixed_opacity` | |
 
 ## Results
-Pending. Early sign: `render/valid_frac` ≈ 0.99 vs ≈ 0.96 in E001 (fewer uncovered patches).
+Validation curves: `logs/val_curves.png` (regenerate with `uv run python scripts/plot_val_curves.py`; reads the
+live run dir). E001 is drawn faintly for reference only: its validation scenes were also missing their opaque
+splats, so its numbers are on different data and not directly comparable.
+
+| Step | val loss | std cos (render) | raw cos (render) | baseline |
+|------|----------|------------------|------------------|----------|
+| 1000 | 0.738 | 0.413 | 0.605 | 0.463 |
+| 2000 | 0.638 | 0.492 | 0.645 | 0.463 |
+| 3000 | 0.583 | 0.538 | 0.666 | 0.463 |
+
+`render/valid_frac` ≈ 0.99 vs ≈ 0.96 in E001 (fewer uncovered patches).
 
 ## Interpretation
 Pending.

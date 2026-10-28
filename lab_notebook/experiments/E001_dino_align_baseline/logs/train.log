@@ -163,3 +163,4 @@ SplatTransformer: 14.83M parameters
 [003950] loss=0.5756 grad_norm=0.3445 data_s=0.0411 render/cos=0.5407 render/cos_raw=0.6740 render/valid_frac=0.9583 point/cos=0.5348 point/cos_raw=0.6690 lr=0.0003 step_s=0.6233 views=12.0000 splats_per_view=69771.3333
 [003975] loss=0.5749 grad_norm=0.3288 data_s=0.0406 render/cos=0.5408 render/cos_raw=0.6766 render/valid_frac=0.9567 point/cos=0.5372 point/cos_raw=0.6767 lr=0.0003 step_s=0.5937 views=12.0000 splats_per_view=75115.2500
 [004000] loss=0.5838 grad_norm=0.3513 data_s=0.0410 render/cos=0.5349 render/cos_raw=0.6680 render/valid_frac=0.9590 point/cos=0.5253 point/cos_raw=0.6628 lr=0.0003 step_s=0.6119 views=12.0000 splats_per_view=89764.4167
+[004000] val/loss=0.5891 val/baseline/cos=0.5055 val/render/cos=0.5284 val/render/cos_raw=0.6617 val/render/valid_frac=0.9693 val/point/cos=0.5299 val/point/cos_raw=0.6621
