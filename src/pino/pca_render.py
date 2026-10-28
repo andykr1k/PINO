@@ -168,6 +168,7 @@ def main() -> None:
     parser.add_argument("--views", type=int, default=6)
     parser.add_argument("--fit-samples", type=int, default=200_000)
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--tiles-per-batch", type=int, default=4, help="Lower to reduce GPU memory")
     parser.add_argument("--viser", action="store_true", help="Serve the PCA-coloured scene in viser after rendering")
     args = parser.parse_args()
 
@@ -186,7 +187,7 @@ def main() -> None:
     print(f"Scene {scene.name}: {scene.num_splats} splats")
 
     start = time.time()
-    features = embed_scene(model, scene, seed=args.seed)
+    features = embed_scene(model, scene, tiles_per_batch=args.tiles_per_batch, seed=args.seed)
     print(f"Embedded scene in {time.time() - start:.1f}s")
 
     generator = torch.Generator(device=device).manual_seed(args.seed)
